@@ -1,0 +1,34 @@
+{
+  "name": "vswaf-mission-board",
+  "productName": "vSWAF Mission Board",
+  "version": "1.1.0",
+  "description": "vSWAF Mission Board desktop app",
+  "main": "main.js",
+  "author": "vSWAF",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "eu.vswaf.missionboard",
+    "productName": "vSWAF Mission Board",
+    "files": ["main.js", "config.json", "offline.html", "build/icon.png"],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "vSWAF Mission Board"
+    },
+    "portable": {
+      "artifactName": "vSWAF-Mission-Board-Portable.exe"
+    }
+  }
+}

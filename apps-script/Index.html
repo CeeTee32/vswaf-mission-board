@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#0B2545; --navy2:#13396B; --blue:#006AA7; --yellow:#FECC02; --ink:#12233A; --muted:#4A5D75; --line:#DCE4EE; --bg:#EEF2F7; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Inter, system-ui, sans-serif; color: var(--ink); background: var(--bg); }
+  .app { display:flex; flex-wrap:wrap; min-height:100vh; }
+  nav { flex:1 1 220px; max-width:250px; background:var(--navy); color:#fff; padding:22px 14px; display:flex; flex-direction:column; gap:6px; }
+  .brand { display:flex; align-items:center; gap:12px; padding:0 8px 18px; }
+  .brand b { font-family:'Space Grotesk',sans-serif; font-size:20px; display:block; }
+  .brand span { font-size:12px; color:#B9C7DA; }
+  nav button { all:unset; cursor:pointer; display:flex; align-items:center; gap:12px; padding:12px; border-radius:10px; color:#D6E0EC; font-size:15px; }
+  nav button.on { background:var(--navy2); color:#fff; font-weight:600; }
+  nav button:focus-visible { outline:2px solid var(--yellow); }
+  .who { margin-top:auto; padding:10px 12px; font-size:13px; color:#B9C7DA; display:flex; flex-direction:column; gap:4px; }
+  .who b { color:#fff; font-size:14px; }
+  .who button { all:unset; cursor:pointer; color:#FECC02; font-size:13px; text-decoration:underline; }
+  .who button:focus-visible { outline:2px solid #FECC02; outline-offset:2px; }
+  .login { position:fixed; inset:0; background:#0B2545; display:flex; align-items:center; justify-content:center; padding:20px; z-index:60; }
+  .login .box { background:#fff; border-radius:16px; padding:32px 30px; max-width:400px; width:100%; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .login h1 { margin:0; }
+  .login .err { background:#FDF1F0; color:#A12622; border-radius:10px; padding:10px 12px; font-weight:600; font-size:14px; }
+  .discord { display:inline-flex; align-items:center; justify-content:center; gap:10px; height:48px; padding:0 22px; border-radius:10px; background:#5865F2; color:#fff; font-weight:700; text-decoration:none; font-size:16px; width:100%; box-sizing:border-box; }
+  .discord:hover { background:#4752C4; }
+  .discord[aria-disabled="true"] { opacity:.6; pointer-events:none; }
+  main { flex:999 1 560px; min-width:0; padding:26px 30px; display:flex; flex-direction:column; gap:20px; }
+  h1 { margin:0; font-family:'Space Grotesk',sans-serif; font-size:28px; color:var(--navy); }
+  .sub { color:var(--muted); font-size:14px; margin-top:4px; }
+  .top { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:14px; }
+  .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+  .tile { padding:16px 18px; display:flex; flex-direction:column; gap:4px; }
+  .tile small { color:var(--muted); font-size:13px; font-weight:500; }
+  .tile strong { font-family:'Space Grotesk',sans-serif; font-size:28px; color:var(--navy); }
+  .chip { height:36px; padding:0 14px; border-radius:999px; border:1px solid #C6D2E1; background:#fff; color:#24364F; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  .chip.on { background:var(--navy); border-color:var(--navy); color:#fff; }
+  input, select { height:44px; padding:0 12px; border:1px solid #C6D2E1; border-radius:10px; font:inherit; font-size:15px; color:var(--ink); background:#fff; }
+  .btn { height:44px; padding:0 20px; border:none; border-radius:10px; font:inherit; font-weight:700; font-size:15px; cursor:pointer; }
+  .btn.primary { background:var(--blue); color:#fff; }
+  .btn.yellow { background:var(--yellow); color:var(--navy); }
+  .btn.ghost { background:#fff; border:1px solid #C6D2E1; color:#24364F; }
+  .btn:disabled { opacity:.6; cursor:wait; }
+  .split { display:flex; flex-wrap:wrap; gap:18px; align-items:flex-start; }
+  .tablewrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; min-width:700px; }
+  th { text-align:left; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.6px; padding:12px 10px; }
+  td { padding:12px 10px; border-top:1px solid #EDF1F6; vertical-align:top; }
+  tr.click { cursor:pointer; }
+  tr.click:hover { background:#F6F9FC; }
+  tr.sel { background:#FFF6CC !important; }
+  .id { font-weight:700; color:var(--navy); white-space:nowrap; }
+  .muted { color:var(--muted); font-size:12px; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .pill { display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.3px; white-space:nowrap; }
+  .p-AVAILABLE { background:#DDF1D6; color:#245A14; }
+  .p-LOW { background:#FFE7A3; color:#5E4500; }
+  .p-PLANNED, .p-FULFILLED, .p-Planned { background:#C9302C; color:#fff; }
+  .p-AIRBORNE, .p-Airborne { background:#CFE0F6; color:#0A3266; }
+  .p-OVER-ALLOCATED { background:#8E1B17; color:#fff; }
+  .p-Completed { background:#DDF1D6; color:#245A14; }
+  .p-Cancelled, .p-FERRY, .p-ground { background:#E3EAF3; color:#24364F; }
+  .detail { flex:1 1 300px; max-width:380px; padding:20px; display:flex; flex-direction:column; gap:14px; }
+  .route { display:flex; align-items:center; gap:12px; background:#F3F6FA; border-radius:12px; padding:14px; }
+  .route b { font-family:'Space Grotesk',sans-serif; font-size:22px; display:block; }
+  .label { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; }
+  form.book { padding:22px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 18px; flex:999 1 520px; min-width:0; }
+  form.book .full { grid-column:span 2; }
+  form.book .f { display:flex; flex-direction:column; gap:6px; }
+  form.book label { font-size:13px; font-weight:600; color:#24364F; }
+  .regs { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; }
+  .reg { text-align:left; padding:10px 12px; border-radius:10px; border:2px solid var(--line); background:#fff; cursor:pointer; font:inherit; color:var(--ink); display:flex; flex-direction:column; gap:2px; }
+  .reg.on { border-color:var(--blue); background:#EAF3FB; }
+  .reg b { font-size:15px; }
+  .fleetgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:14px; }
+  .ac { padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .ac .icao { font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700; }
+  .next { padding:10px 12px; border-radius:10px; background:#F3F6FA; display:flex; flex-direction:column; gap:2px; font-size:14px; font-weight:600; }
+  .next.on { background:#FFF6CC; }
+  h2 { margin:6px 0 0; font-size:16px; color:var(--navy); }
+  .toast { position:fixed; right:20px; bottom:20px; max-width:420px; padding:14px 18px; border-radius:12px; color:#fff; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  .toast.ok { background:#1E6B34; } .toast.err { background:#A12622; }
+  .hidden { display:none !important; }
+  @media (min-width:701px) { .app { height:100vh; flex-wrap:nowrap; } main { min-height:0; } main { overflow-y:auto; } nav { overflow-y:auto; } }
+  @media (max-width:700px) { form.book { grid-template-columns:1fr; } form.book .full { grid-column:auto; } main { padding:18px 14px; } nav { max-width:none; } }
+  .reg.busy { border-color:#E0A3A0; background:#FDF1F0; }
+  .reg.busy.on { border-color:#A12622; }
+  .reg .clash { color:#A12622; font-weight:700; font-size:12px; }
+  .modal-bg { position:fixed; inset:0; background:rgba(11,37,69,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal { background:#fff; border-radius:14px; max-width:420px; width:100%; padding:22px 24px; box-shadow:0 18px 48px rgba(0,0,0,.25); border-top:6px solid #A12622; display:flex; flex-direction:column; gap:10px; }
+  .modal h2 { margin:0; color:#A12622; font-size:22px; }
+</style>
+</head>
+<body>
+<div id="loginData" hidden data-token="<?= loginToken ?>" data-error="<?= loginError ?>"></div>
+<div class="login hidden" id="loginScreen">
+  <div class="box">
+    <svg width="64" height="64" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#FCD116"/><circle cx="20" cy="20" r="16.6" fill="#005B99"/><path d="M8.10 13.40 L11.00 15.30 L13.10 13.40 L15.20 15.30 L18.10 13.40 L16.50 19.70 L9.70 19.70 Z M21.90 13.40 L24.80 15.30 L26.90 13.40 L29.00 15.30 L31.90 13.40 L30.30 19.70 L23.50 19.70 Z M15.00 23.90 L17.90 25.80 L20.00 23.90 L22.10 25.80 L25.00 23.90 L23.40 30.20 L16.60 30.20 Z" fill="#FCD116"/></svg>
+    <h1>vSWAF Mission Board</h1>
+    <div class="muted" id="loginText">Log in with your Discord account. You only need to do this once on this computer.</div>
+    <div class="err hidden" id="loginErr" role="alert"></div>
+    <a class="discord" id="loginBtn" target="_top" aria-disabled="true" href="#">Log in with Discord</a>
+  </div>
+</div>
+<div class="app hidden" id="appRoot">
+  <nav aria-label="Main">
+    <div class="brand">
+      <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#FCD116"/><circle cx="20" cy="20" r="16.6" fill="#005B99"/><path d="M8.10 13.40 L11.00 15.30 L13.10 13.40 L15.20 15.30 L18.10 13.40 L16.50 19.70 L9.70 19.70 Z M21.90 13.40 L24.80 15.30 L26.90 13.40 L29.00 15.30 L31.90 13.40 L30.30 19.70 L23.50 19.70 Z M15.00 23.90 L17.90 25.80 L20.00 23.90 L22.10 25.80 L25.00 23.90 L23.40 30.20 L16.60 30.20 Z" fill="#FCD116"/></svg>
+      <div><b>vSWAF</b><span>Mission Board</span></div>
+    </div>
+    <button data-page="missions" class="on">Missions</button>
+    <button data-page="book">Book mission</button>
+    <button data-page="log">Pilot Log</button>
+    <button data-page="fleet">Fleet &amp; Parking</button>
+    <button data-page="stats">Stats</button>
+    <div class="who"><span>Logged in as</span><b id="whoName">–</b><button type="button" id="logoutBtn">Log out</button></div>
+  </nav>
+
+  <main>
+    <!-- Missions -->
+    <section id="missions">
+      <div class="top">
+        <div><h1>Mission Board</h1></div>
+        <div class="row">
+          <label for="search" class="hidden">Search</label>
+          <input id="search" type="search" placeholder="Search ICAO, cargo or ID" aria-label="Search missions" style="width:260px">
+          <button class="btn ghost" id="refresh" type="button">Refresh</button>
+        </div>
+      </div>
+      <div class="tiles" style="margin-top:18px">
+        <div class="card tile"><small>Missions on the board</small><strong id="tMissions">–</strong><span class="muted" id="tMix"></span></div>
+        <div class="card tile"><small>Open missions</small><strong id="tOpen">–</strong></div>
+        <div class="card tile"><small>Planned flights</small><strong id="tPlanned">–</strong></div>
+        <div class="card tile"><small>Airborne now</small><strong id="tAir">–</strong></div>
+      </div>
+      <div class="split" style="margin-top:18px">
+        <div class="card" style="flex:999 1 560px; min-width:0">
+          <div class="row" id="chips" style="padding:14px 16px; border-bottom:1px solid #E3EAF3"></div>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>ID</th><th>Route</th><th>Cargo</th><th>Aircraft</th><th class="num">Remaining</th><th>Status</th></tr></thead>
+              <tbody id="mBody"><tr><td colspan="6">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="card detail" id="detail"><span class="muted">Pick a mission to see it here.</span></aside>
+      </div>
+    </section>
+
+    <!-- Book -->
+    <section id="book" class="hidden">
+      <div><h1 id="bTitle">Book a mission</h1><div class="sub" id="bSub">Your booking goes straight into the Pilot Log and shows for every pilot.</div></div>
+      <div class="split" style="margin-top:18px">
+        <form class="card book" id="bookForm">
+          <div class="f full"><label for="bMission">Cargo ID</label><select id="bMission" required></select></div>
+          <div class="f"><label for="bPilot">Pilot (your Discord name)</label><input id="bPilot" readonly style="background:#F3F6FA"></div>
+          <div class="f"><label for="bCall">Callsign</label><input id="bCall" style="text-transform:uppercase" autocomplete="off"></div>
+          <div class="f full"><label for="bType">Aircraft type</label><select id="bType"></select></div>
+          <div class="f full"><span class="label" id="regLabel">Registration</span><div class="regs" id="bRegs"></div></div>
+          <div class="f"><label for="bDate">Mission date</label><input id="bDate" type="date" required></div>
+          <div class="f"><label for="bWin">Book b/w (Zulu)</label><input id="bWin" placeholder="e.g. 1400-1630Z"></div>
+          <div class="f" id="qtyBox"><label for="bQty">Qty taken (kg)</label>
+            <div class="row" style="flex-wrap:nowrap"><input id="bQty" type="number" min="1" step="1" style="flex:1"><button type="button" class="btn ghost" id="bAll" style="white-space:nowrap">Take all</button></div></div>
+          <div class="f"><label for="bStatus">Status</label><select id="bStatus"><option>Planned</option><option>Airborne</option><option>Completed</option><option>Cancelled</option></select></div>
+          <div class="f" id="ferryBox"><label for="bFerry" id="ferryLabel">Ferried ICAO</label><input id="bFerry" maxlength="4" placeholder="ENGM" style="text-transform:uppercase"></div>
+          <div class="full row" style="justify-content:flex-end">
+            <button type="button" class="btn ghost" id="bCancel">Cancel</button>
+            <button type="submit" class="btn primary" id="bSave">Save booking</button>
+          </div>
+        </form>
+        <aside class="card detail" id="bSummary"></aside>
+      </div>
+    </section>
+
+    <!-- Log -->
+    <section id="log" class="hidden">
+      <div class="top">
+        <div><h1>Pilot Log</h1><div class="sub">Set your flight to Airborne when you depart and Completed when you land.</div></div>
+        <div class="row">
+          <button class="chip on" data-logf="mine" type="button">My flights</button>
+          <button class="chip" data-logf="active" type="button">Planned &amp; airborne</button>
+          <button class="chip" data-logf="all" type="button">All</button>
+        </div>
+      </div>
+      <div class="card tablewrap" style="margin-top:18px">
+        <table>
+          <thead><tr><th>Delivery</th><th>Pilot</th><th>Aircraft</th><th>Date / window</th><th class="num">Qty taken</th><th class="num">Available / left</th><th>Check</th><th>Status</th><th>Ferried ICAO</th><th></th></tr></thead>
+          <tbody id="lBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Fleet -->
+    <section id="stats" class="hidden">
+      <div><h1>Stats</h1><div class="sub">Live totals from the Cargo Board and the Pilot Log.</div></div>
+      <div class="card" style="margin-top:18px;padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+        <div class="row" style="justify-content:space-between"><b>Cargo progress</b><b id="sPct">0%</b></div>
+        <div style="height:12px;border-radius:6px;background:#E3EAF3;overflow:hidden" role="img" id="sBarWrap"><div id="sBar" style="height:100%;width:0;background:#0B5CAD"></div></div>
+        <div class="muted" id="sBarText"></div>
+      </div>
+      <h2 style="margin:22px 0 10px">Cargo</h2>
+      <div class="tiles" id="sCargo"></div>
+      <h2 style="margin:22px 0 10px">Bookings</h2>
+      <div class="tiles" id="sBook"></div>
+      <h2 style="margin:22px 0 10px">Missions by destination</h2>
+      <div class="card tablewrap">
+        <table>
+          <thead><tr><th>Destination ICAO</th><th>Airfield</th><th class="num">Missions</th><th class="num">Total weight</th><th class="num">Remaining</th><th style="width:22%">Booked</th></tr></thead>
+          <tbody id="sDest"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="fleet" class="hidden">
+      <div><h1>Fleet &amp; Parking</h1><div class="sub">Where every aircraft is parked and when it is booked next (Zulu).</div></div>
+      <div id="fBody" style="display:flex; flex-direction:column; gap:14px; margin-top:18px"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+var DATA = null, page = 'missions', filter = 'All', picked = null, logF = 'mine', bReg = '', editRow = null;
+
+// ---- helpers (all text goes in as text, never as HTML) ----
+function el(tag, attrs, kids) {
+  var n = document.createElement(tag);
+  for (var k in (attrs || {})) {
+    if (k === 'text') n.textContent = attrs[k];
+    else if (k === 'cls') n.className = attrs[k];
+    else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), attrs[k]);
+    else n.setAttribute(k, attrs[k]);
+  }
+  (kids || []).forEach(function (c) { if (c) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return n;
+}
+function $(id) { return document.getElementById(id); }
+function fmt(n) { return Number(n || 0).toLocaleString('en-US'); }
+function pill(s) { return el('span', { cls: 'pill p-' + (s || 'ground').replace(/\s/g, ''), text: s || 'On ground' }); }
+function group(id) { return id === 'FERRY' ? 'Ferry' : id.slice(0, 3) === 'HKP' ? 'HKP' : id.slice(0, 3) === 'STS' ? 'STS' : 'MSN'; }
+function toast(msg, ok) {
+  var t = el('div', { cls: 'toast ' + (ok ? 'ok' : 'err'), text: msg, role: 'status' });
+  document.body.appendChild(t); setTimeout(function () { t.remove(); }, 5000);
+}
+// Name and callsign are remembered from your last booking.
+function me() { return { pilot: DATA && DATA.me ? DATA.me.name : '' }; }
+
+// ---- login ----
+var TOKEN = load('vswafToken');
+// Every server call goes through api(): it adds the login and handles an expired login.
+function api(fn, args, ok, fail) {
+  google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
+    var msg = (e && e.message) || String(e);
+    if (msg.indexOf('LOGIN_REQUIRED') >= 0) { showLogin(msg.replace(/^.*LOGIN_REQUIRED:\s*/, '')); return; }
+    if (fail) fail(e); toast(msg);
+  })[fn].apply(null, [TOKEN].concat(args || []));
+}
+var loginTimer = null;
+function showLogin(msg) {
+  TOKEN = ''; try { localStorage.removeItem('vswafToken'); } catch (e) {}
+  DATA = null;
+  $('appRoot').classList.add('hidden'); $('loginScreen').classList.remove('hidden');
+  $('loginErr').textContent = msg || ''; $('loginErr').classList.toggle('hidden', !msg);
+  var getLink = function () {
+    google.script.run.withSuccessHandler(function (r) {
+      $('loginBtn').href = r.url; $('loginBtn').setAttribute('aria-disabled', 'false');
+      $('loginText').textContent = 'Log in with your Discord account. You need the ' + r.roleName + ' role on the vSWAF Discord. You only log in once on this computer.';
+    }).withFailureHandler(function (e) { $('loginErr').textContent = (e && e.message) || String(e); $('loginErr').classList.remove('hidden'); }).getLoginUrl();
+  };
+  getLink(); clearInterval(loginTimer); loginTimer = setInterval(getLink, 10 * 60 * 1000); // the link is valid for 15 min
+}
+function showApp() {
+  clearInterval(loginTimer);
+  $('loginScreen').classList.add('hidden'); $('appRoot').classList.remove('hidden');
+}
+function store(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+
+// ---- data ----
+function refresh() {
+  if (!TOKEN) return;
+  api('getData', [], got);
+}
+function got(d) { DATA = d; showApp(); $('whoName').textContent = d.me.name; render(); }
+
+// ---- navigation ----
+function show(p) {
+  page = p;
+  ['missions', 'book', 'log', 'fleet', 'stats'].forEach(function (s) { $(s).classList.toggle('hidden', s !== p); });
+  document.querySelectorAll('nav button').forEach(function (b) { b.classList.toggle('on', b.dataset.page === p); });
+  render();
+}
+
+function render() {
+  if (!DATA) return;
+  if (page === 'missions') renderMissions();
+  if (page === 'book') renderBook();
+  if (page === 'log') renderLog();
+  if (page === 'fleet') renderFleet();
+  if (page === 'stats') renderStats();
+}
+
+// ---- missions ----
+function renderMissions() {
+  var ms = DATA.missions.filter(function (m) { return m.id !== 'FERRY'; });
+  var cnt = { All: ms.length, MSN: 0, Airdrops: 0, HKP: 0, STS: 0 };
+  ms.forEach(function (m) { var g = group(m.id); if (m.dst === 'ZZZZ' && g === 'MSN') cnt.Airdrops++; else cnt[g]++; });
+  $('tMissions').textContent = ms.length;
+  $('tMix').textContent = cnt.MSN + ' MSN · ' + cnt.Airdrops + ' airdrops · ' + cnt.HKP + ' HKP · ' + cnt.STS + ' STS';
+  $('tOpen').textContent = ms.filter(function (m) { return m.status === 'AVAILABLE' || m.status === 'LOW'; }).length;
+  $('tPlanned').textContent = DATA.log.filter(function (l) { return l.status === 'Planned'; }).length;
+  $('tAir').textContent = DATA.log.filter(function (l) { return l.status === 'Airborne'; }).length;
+
+  var chips = $('chips'); chips.innerHTML = '';
+  ['All', 'MSN', 'Airdrops', 'HKP', 'STS'].forEach(function (k) {
+    chips.appendChild(el('button', { type: 'button', cls: 'chip' + (filter === k ? ' on' : ''), text: k + ' · ' + cnt[k], onclick: function () { filter = k; renderMissions(); } }));
+  });
+
+  var q = $('search').value.trim().toLowerCase();
+  var body = $('mBody'); body.innerHTML = '';
+  ms.filter(function (m) {
+    var g = (m.dst === 'ZZZZ' && group(m.id) === 'MSN') ? 'Airdrops' : group(m.id);
+    if (filter !== 'All' && g !== filter) return false;
+    return !q || [m.id, m.dep, m.dst, m.depName, m.dstName, m.cargo, m.aircraft].join(' ').toLowerCase().indexOf(q) >= 0;
+  }).forEach(function (m) {
+    body.appendChild(el('tr', { cls: 'click' + (picked === m.id ? ' sel' : ''), onclick: function () { picked = m.id; renderMissions(); } }, [
+      el('td', { cls: 'id', text: m.id }),
+      el('td', {}, [el('div', { text: m.dep + ' → ' + m.dst, style: 'font-weight:600; white-space:nowrap' }), el('div', { cls: 'muted', text: m.dstName })]),
+      el('td', { text: m.cargo }),
+      el('td', { text: m.aircraft }),
+      el('td', { cls: 'num', text: fmt(m.remaining) + ' kg' }),
+      el('td', {}, [pill(m.status)])
+    ]));
+  });
+  if (!body.children.length) body.appendChild(el('tr', {}, [el('td', { colspan: '6', text: 'No missions match.' })]));
+  renderDetail();
+}
+
+function renderDetail() {
+  var d = $('detail'); d.innerHTML = '';
+  var m = DATA.missions.filter(function (x) { return x.id === picked; })[0];
+  if (!m) { d.appendChild(el('span', { cls: 'muted', text: 'Pick a mission to see it here.' })); return; }
+  var bookings = DATA.log.filter(function (l) { return l.cargoId === m.id && l.status !== 'Cancelled'; });
+  d.appendChild(el('div', { cls: 'row', style: 'justify-content:space-between' }, [el('b', { text: m.id, style: "font-family:'Space Grotesk',sans-serif;font-size:22px;color:#0B2545" }), pill(m.status)]));
+  d.appendChild(el('div', { cls: 'route' }, [
+    el('div', { style: 'flex:1' }, [el('b', { text: m.dep }), el('span', { cls: 'muted', text: m.depName })]),
+    el('span', { text: '→', 'aria-hidden': 'true' }),
+    el('div', { style: 'flex:1; text-align:right' }, [el('b', { text: m.dst }), el('span', { cls: 'muted', text: m.dstName })])
+  ]));
+  d.appendChild(el('div', {}, [el('div', { cls: 'label', text: 'Cargo' }), el('div', { text: m.cargo })]));
+  d.appendChild(el('div', { cls: 'row', style: 'gap:24px' }, [
+    el('div', {}, [el('div', { cls: 'label', text: 'Weight' }), el('b', { text: fmt(m.weight) + ' kg' })]),
+    el('div', {}, [el('div', { cls: 'label', text: 'Remaining' }), el('b', { text: fmt(m.remaining) + ' kg' })])
+  ]));
+  d.appendChild(el('div', {}, [el('div', { cls: 'label', text: 'Aircraft' }), el('div', { text: m.aircraft })]));
+  if (bookings.length) {
+    d.appendChild(el('div', {}, [el('div', { cls: 'label', text: 'Booked by' })].concat(bookings.map(function (b) {
+      return el('div', { style: 'font-size:14px;margin-top:4px', text: b.pilot + ' · ' + b.reg + ' · ' + b.date + (b.window ? ' ' + b.window : '') + ' · ' + b.status });
+    }))));
+  }
+  if (m.remaining > 0) d.appendChild(el('button', { type: 'button', cls: 'btn yellow', text: 'Book this mission', onclick: function () { resetForm(); $('bMission').dataset.want = m.id; show('book'); } }));
+}
+
+// ---- book ----
+function renderBook() {
+  var sel = $('bMission'), want = sel.dataset.want || sel.value || 'FERRY';
+  sel.innerHTML = '';
+  DATA.missions.slice().sort(function (a, b) { return a.id === 'FERRY' ? -1 : b.id === 'FERRY' ? 1 : 0; }).forEach(function (m) {
+    if (m.id !== 'FERRY' && m.remaining <= 0 && !(editing() && editing().cargoId === m.id)) return;
+    var label = m.id === 'FERRY' ? 'FERRY · no payload' : m.id + ' · ' + m.dep + ' → ' + m.dst + ' ' + m.dstName + ' · ' + fmt(room(m)) + ' of ' + fmt(m.weight) + ' kg left';
+    sel.appendChild(el('option', { value: m.id, text: label }));
+  });
+  sel.value = want; if (!sel.value) sel.value = 'FERRY';
+  delete sel.dataset.want;
+
+  var types = []; DATA.fleet.forEach(function (f) { if (types.indexOf(f.type) < 0) types.push(f.type); });
+  var tSel = $('bType'), curT = tSel.value || types[0];
+  tSel.innerHTML = ''; types.forEach(function (t) { tSel.appendChild(el('option', { value: t, text: t })); });
+  tSel.value = types.indexOf(curT) >= 0 ? curT : types[0];
+
+  if (!editRow) $('bPilot').value = me().pilot;
+  if (!$('bDate').value) $('bDate').value = new Date().toISOString().slice(0, 10);
+  var e = editing();
+  $('bTitle').textContent = e ? 'Edit ' + e.deliveryId : 'Book a mission';
+  $('bSub').textContent = e ? 'Change anything below and save. The Pilot Log row is updated for everyone.' : 'Your booking goes straight into the Pilot Log and shows for every pilot.';
+  $('bSave').textContent = e ? 'Save changes' : 'Save booking';
+  bookChanged();
+}
+
+function bookChanged() {
+  var m = DATA.missions.filter(function (x) { return x.id === $('bMission').value; })[0];
+  var ferry = !m || m.id === 'FERRY';
+  $('qtyBox').classList.toggle('hidden', ferry);
+  $('ferryLabel').textContent = ferry ? 'Arrival ICAO (required for ferry)' : 'Ferried ICAO (optional, if you land elsewhere)';
+  if (!ferry && !$('bQty').value && !editing()) $('bQty').value = room(m);
+
+  var type = $('bType').value, regs = DATA.fleet.filter(function (f) { return f.type === type; });
+  if (!regs.some(function (r) { return r.reg === bReg; })) bReg = regs.length ? regs[0].reg : '';
+  $('regLabel').textContent = 'Registration · ' + type;
+  // Rebuild the cards only when the list itself changes; otherwise update them in place,
+  // so a click on a card is never lost while the time field is being committed.
+  var box = $('bRegs');
+  var sig = regs.map(function (r) { return r.reg + r.parked + r.nextMission + r.nextDate + r.nextWindow; }).join('|');
+  if (box.dataset.sig !== sig) {
+    box.dataset.sig = sig; box.innerHTML = '';
+    regs.forEach(function (r) {
+      var busy = r.nextMission ? 'Next: ' + r.nextMission + ' ' + r.nextDate + (r.nextWindow ? ' ' + r.nextWindow : '') : 'Free';
+      box.appendChild(el('button', { type: 'button', cls: 'reg', 'data-reg': r.reg, onclick: function () { bReg = r.reg; bookChanged(); } }, [
+        el('b', { text: r.reg }), el('span', { cls: 'muted', text: 'Parked at ' + r.parked }), el('span', { cls: 'muted', text: busy }),
+        el('span', { cls: 'clash hidden', text: 'Unavailable at this time' })
+      ]));
+    });
+  }
+  Array.prototype.forEach.call(box.children, function (btn) {
+    var reg = btn.getAttribute('data-reg'), clash = clashes(reg).length > 0;
+    btn.classList.toggle('on', reg === bReg);
+    btn.classList.toggle('busy', clash);
+    btn.querySelector('.clash').classList.toggle('hidden', !clash);
+  });
+
+  var s = $('bSummary'); s.innerHTML = '';
+  s.appendChild(el('div', { cls: 'label', text: 'Booking summary' }));
+  s.appendChild(el('b', { text: m ? m.id : 'FERRY', style: "font-family:'Space Grotesk',sans-serif;font-size:24px;color:#0B2545" }));
+  if (m && !ferry) {
+    s.appendChild(el('div', { text: m.cargo }));
+    s.appendChild(el('div', { cls: 'route' }, [el('b', { text: m.dep }), el('span', { text: '→' }), el('b', { text: m.dst })]));
+    s.appendChild(el('div', { cls: 'muted', text: 'Aircraft for this mission: ' + m.aircraft }));
+    s.appendChild(weightPanel(m));
+  } else {
+    s.appendChild(el('div', { text: 'Ferry flight with no payload. Enter where you land, and the aircraft will be parked there when you set it to Completed.' }));
+  }
+  if (bReg) {
+    var f = DATA.fleet.filter(function (x) { return x.reg === bReg; })[0];
+    s.appendChild(el('div', { cls: 'next on' }, [el('span', { cls: 'label', text: 'Your aircraft' }), el('span', { text: bReg + ' · parked at ' + f.parked })]));
+  }
+  checkAvailability();
+}
+
+// ---- aircraft availability ----
+function toMin(w) {
+  var m = String(w || '').match(/(\d{1,2}):?(\d{2})\s*[-–]\s*(\d{1,2}):?(\d{2})/);
+  if (!m) return null;
+  var a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4];
+  if (b <= a) b += 1440;
+  return [a, b];
+}
+// Planned/airborne bookings of this reg that clash with the date + Book b/w on the form.
+function clashes(reg) {
+  var date = $('bDate').value, mine = toMin($('bWin').value);
+  if (!reg || !date || $('bStatus').value === 'Completed' || $('bStatus').value === 'Cancelled') return [];
+  return DATA.log.filter(function (l) {
+    if (l.row === editRow || l.reg !== reg || l.date !== date) return false;
+    if (l.status !== 'Planned' && l.status !== 'Airborne') return false;
+    var other = toMin(l.window);
+    return !mine || !other || (mine[0] < other[1] && other[0] < mine[1]);
+  });
+}
+var lastWarned = '';
+function checkAvailability() {
+  var c = clashes(bReg);
+  $('bSave').disabled = c.length > 0;
+  if (!c.length) { lastWarned = ''; return; }
+  var key = bReg + '|' + $('bDate').value + '|' + $('bWin').value;
+  if (key === lastWarned) return;           // don't pop up again for the same choice
+  lastWarned = key;
+  var l = c[0];
+  popup('Aircraft unavailable', bReg + ' is already booked on ' + l.date + (l.window ? ' ' + l.window + 'Z' : ' (no time given)') +
+    ' by ' + (l.pilot || 'another pilot') + (l.callsign ? ' (' + l.callsign + ')' : '') + ' for ' + l.cargoId + '. Pick another registration or change the time.');
+}
+function popup(title, msg) {
+  var old = document.querySelector('.modal-bg'); if (old) old.remove();
+  var ok = el('button', { type: 'button', cls: 'btn primary', text: 'OK', style: 'align-self:flex-end' });
+  var bg = el('div', { cls: 'modal-bg', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'mTitle' }, [
+    el('div', { cls: 'modal' }, [el('h2', { id: 'mTitle', text: title }), el('div', { text: msg }), ok])
+  ]);
+  function close() { bg.remove(); document.removeEventListener('keydown', esc); }
+  function esc(e) { if (e.key === 'Escape') close(); }
+  ok.addEventListener('click', close);
+  bg.addEventListener('click', function (e) { if (e.target === bg) close(); });
+  document.addEventListener('keydown', esc);
+  document.body.appendChild(bg); ok.focus();
+}
+
+// Same as rowKey_ on the server: tells the server exactly which booking we mean.
+function rowKey(l) { return [l.deliveryId, l.cargoId, l.pilot, l.reg, l.date, l.window].join('|'); }
+
+// The booking being edited, if any.
+function editing() { return editRow ? DATA.log.filter(function (l) { return l.row === editRow; })[0] || null : null; }
+
+// kg this booking may take: what's left, plus this booking's own kg when editing the same mission.
+function room(m) {
+  var e = editing(), own = (e && e.cargoId === m.id && e.status !== 'Cancelled') ? Number(e.qtyNum) || 0 : 0;
+  return Math.max(0, m.remaining) + own;
+}
+
+function weightPanel(m) {
+  var total = m.weight, avail = room(m), booked = total - avail;
+  var q = Math.round(Number(String($('bQty').value).replace(',', '.'))) || 0;
+  var after = avail - q, pct = total ? Math.min(100, Math.max(0, (booked + q) / total * 100)) : 0;
+  var line = function (k, v, strong) {
+    return el('div', { cls: 'row', style: 'justify-content:space-between;font-size:14px' }, [el('span', { cls: 'muted', text: k }), el(strong ? 'b' : 'span', { text: v })]);
+  };
+  var over = after < 0;
+  return el('div', { style: 'display:flex;flex-direction:column;gap:6px;border-top:1px solid #E3EAF3;padding-top:12px' }, [
+    el('div', { cls: 'label', text: 'Weight' }),
+    line('Mission weight', fmt(total) + ' kg'),
+    line('Booked by others', fmt(booked) + ' kg'),
+    line('Available now', fmt(avail) + ' kg', true),
+    line('Your qty taken', fmt(q) + ' kg', true),
+    el('div', { style: 'height:8px;border-radius:4px;background:#E3EAF3;overflow:hidden', role: 'img', 'aria-label': Math.round(pct) + '% of the cargo booked' },
+      [el('div', { style: 'height:100%;width:' + pct + '%;background:' + (over ? '#C62828' : '#0B5CAD') })]),
+    line('Remaining after you', fmt(after) + ' kg', true),
+    el('div', { style: 'font-size:13px;font-weight:600;color:' + (over ? '#C62828' : after === 0 ? '#2E7D32' : '#5B6B7F'),
+      text: over ? 'Over-allocated by ' + fmt(-after) + ' kg. Lower your qty.' : after === 0 ? 'You take the last of the cargo. Mission will be fully booked.' : 'OK · ' + fmt(after) + ' kg left for others.' })
+  ]);
+}
+
+function resetForm() {
+  editRow = null;
+  ['bCall', 'bWin', 'bQty', 'bFerry'].forEach(function (id) { $(id).value = ''; });
+  $('bStatus').value = 'Planned';
+}
+
+function startEdit(l) {
+  editRow = l.row;
+  $('bMission').dataset.want = l.cargoId;
+  $('bPilot').value = l.pilot; $('bCall').value = l.callsign;
+  $('bType').innerHTML = ''; $('bType').appendChild(el('option', { value: l.type, text: l.type })); $('bType').value = l.type;
+  bReg = l.reg;
+  $('bDate').value = l.date; $('bWin').value = l.window;
+  $('bQty').value = l.qtyNum || ''; $('bStatus').value = l.status || 'Planned'; $('bFerry').value = l.ferried;
+  show('book');
+}
+
+function saveBooking(ev) {
+  ev.preventDefault();
+  var b = { cargoId: $('bMission').value, pilot: $('bPilot').value, callsign: $('bCall').value.trim().toUpperCase(), type: $('bType').value, reg: bReg,
+            date: $('bDate').value, window: $('bWin').value, qty: $('bQty').value, ferried: $('bFerry').value, status: $('bStatus').value,
+            key: editing() ? rowKey(editing()) : '' };
+  var m = DATA.missions.filter(function (x) { return x.id === b.cargoId; })[0];
+  if (clashes(b.reg).length) { lastWarned = ''; checkAvailability(); return; }
+  if (m && m.id !== 'FERRY' && b.status !== 'Cancelled' && Number(b.qty) > room(m)) { toast('Only ' + fmt(room(m)) + ' kg is available on ' + m.id + '.'); return; }
+  if (!b.reg) { toast('Pick a registration.'); return; }
+  $('bSave').disabled = true;
+  var wasEdit = editRow;
+  var done = function (d) {
+    $('bSave').disabled = false;
+    toast(wasEdit ? 'Saved changes to ' + b.cargoId + '.' : 'Booked ' + b.cargoId + ' with ' + b.reg + '.', true);
+    resetForm();
+    DATA = d; logF = 'mine'; show('log');
+  };
+  var failed = function () { $('bSave').disabled = false; };
+  if (wasEdit) api('editBooking', [wasEdit, b], done, failed); else api('saveBooking', [b], done, failed);
+}
+
+// ---- log ----
+function renderLog() {
+  document.querySelectorAll('[data-logf]').forEach(function (c) { c.classList.toggle('on', c.dataset.logf === logF); });
+  var who = me().pilot.toLowerCase();
+  var rows = DATA.log.filter(function (l) {
+    if (logF === 'mine') return who && l.pilot.toLowerCase() === who;
+    if (logF === 'active') return l.status === 'Planned' || l.status === 'Airborne';
+    return true;
+  }).reverse();
+  var body = $('lBody'); body.innerHTML = '';
+  rows.forEach(function (l) {
+    var st = el('select', { 'aria-label': 'Status for ' + l.deliveryId, style: 'height:38px' });
+    ['Planned', 'Airborne', 'Completed', 'Cancelled'].forEach(function (s) { st.appendChild(el('option', { value: s, text: s })); });
+    st.value = l.status || 'Planned';
+    var fe = el('input', { value: l.ferried, maxlength: '4', 'aria-label': 'Ferried ICAO for ' + l.deliveryId, style: 'height:38px;width:90px;text-transform:uppercase' });
+    var btn = el('button', { type: 'button', cls: 'btn primary', text: 'Save', style: 'height:38px;padding:0 14px', onclick: function () {
+      btn.disabled = true;
+      api('updateStatus', [l.row, st.value, fe.value, rowKey(l)],
+        function (d) { toast(l.deliveryId + ' is now ' + st.value + '.', true); DATA = d; render(); },
+        function () { btn.disabled = false; });
+    } });
+    body.appendChild(el('tr', {}, [
+      el('td', {}, [el('div', { cls: 'id', text: l.deliveryId }), el('div', { cls: 'muted', text: (l.dep || '') + ' → ' + (l.dst || '') }), el('div', { cls: 'muted', text: l.cargo || '' })]),
+      el('td', {}, [el('div', { text: l.pilot }), el('div', { cls: 'muted', text: l.callsign })]),
+      el('td', {}, [el('div', { text: l.reg }), el('div', { cls: 'muted', text: l.type })]),
+      el('td', {}, [el('div', { text: l.date }), el('div', { cls: 'muted', text: l.window })]),
+      el('td', { cls: 'num', text: l.qty ? l.qty + ' kg' : '–' }),
+      el('td', { cls: 'num' }, [el('div', { text: l.avail ? l.avail + ' kg' : '–' }), el('div', { cls: 'muted', text: l.remainingAfter ? l.remainingAfter + ' kg left' : '' })]),
+      el('td', { text: l.check || '–', style: 'font-size:13px;font-weight:600;color:' + (/over/i.test(l.check) ? '#C62828' : '#2E7D32') }),
+      el('td', {}, [st]), el('td', {}, [fe]),
+      el('td', {}, [el('div', { cls: 'row', style: 'flex-wrap:nowrap;gap:6px' }, [btn,
+        el('button', { type: 'button', cls: 'btn ghost', text: 'Edit', style: 'height:38px;padding:0 14px', onclick: function () { startEdit(l); } })])])
+    ]));
+  });
+  if (!rows.length) body.appendChild(el('tr', {}, [el('td', { colspan: '10', text: logF === 'mine' ? 'No flights under your name yet. Book a mission and your flights show up here, or pick All.' : 'Nothing here.' })]));
+}
+
+// ---- stats ----
+function renderStats() {
+  var ms = DATA.missions.filter(function (m) { return m.id !== 'FERRY'; });
+  var total = 0, remaining = 0, open = 0, fulfilled = 0, low = 0;
+  ms.forEach(function (m) {
+    total += m.weight; remaining += Math.max(0, m.remaining);
+    if (m.remaining > 0) open++;
+    if (m.status === 'FULFILLED') fulfilled++;
+    if (m.remaining > 0 && m.weight > 0 && m.remaining <= m.weight * 0.25) low++;   // same as LOW on the Cargo Board
+  });
+  var booked = total - remaining, pct = total ? Math.round(booked / total * 100) : 0;
+  $('sPct').textContent = pct + '%';
+  $('sBar').style.width = pct + '%';
+  $('sBarWrap').setAttribute('aria-label', pct + '% of all cargo booked');
+  $('sBarText').textContent = fmt(booked) + ' of ' + fmt(total) + ' kg booked · ' + fmt(remaining) + ' kg left';
+
+  var tile = function (label, value, note) {
+    return el('div', { cls: 'card tile' }, [el('small', { text: label }), el('strong', { text: value }), note ? el('span', { cls: 'muted', text: note }) : null]);
+  };
+  var box = $('sCargo'); box.innerHTML = '';
+  [tile('Total cargo weight', fmt(total) + ' kg'), tile('Total booked', fmt(booked) + ' kg'), tile('Total remaining', fmt(remaining) + ' kg'),
+   tile('Open cargo missions', String(open), 'of ' + ms.length), tile('Fulfilled cargo missions', String(fulfilled)),
+   tile('Low cargo missions', String(low))].forEach(function (t) { box.appendChild(t); });
+
+  var deliveries = DATA.log.filter(function (l) { return l.cargoId !== 'FERRY'; });
+  var count = function (list, st) { return list.filter(function (l) { return l.status === st; }).length; };
+  box = $('sBook'); box.innerHTML = '';
+  [tile('Bookings (all)', String(deliveries.length), 'cargo flights'), tile('Planned deliveries', String(count(deliveries, 'Planned'))),
+   tile('Airborne flights', String(count(DATA.log, 'Airborne')), 'incl. ferry'), tile('Completed deliveries', String(count(deliveries, 'Completed'))),
+   tile('Cancelled bookings', String(count(deliveries, 'Cancelled'))), tile('Ferry flights', String(DATA.log.length - deliveries.length))
+  ].forEach(function (t) { box.appendChild(t); });
+
+  // One row per destination, in Cargo Board order, airdrops (ZZZZ) last.
+  var order = [], by = {};
+  ms.forEach(function (m) {
+    var k = m.dst === 'ZZZZ' ? 'ZZZZ|' + m.dstName : m.dst;   // airdrops: one row per drop zone
+    if (!by[k]) { by[k] = { icao: m.dst, name: m.dstName, n: 0, w: 0, r: 0 }; order.push(k); }
+    var d = by[k]; d.n++; d.w += m.weight; d.r += Math.max(0, m.remaining);
+  });
+  order.sort(function (a, b) { return (a.indexOf('ZZZZ') === 0) - (b.indexOf('ZZZZ') === 0); });
+  var body = $('sDest'); body.innerHTML = '';
+  order.forEach(function (k) {
+    var d = by[k], p = d.w ? Math.round((d.w - d.r) / d.w * 100) : 0;
+    body.appendChild(el('tr', {}, [
+      el('td', { cls: 'id', text: d.icao }),
+      el('td', { text: d.name }),
+      el('td', { cls: 'num', text: String(d.n) }),
+      el('td', { cls: 'num', text: fmt(d.w) + ' kg' }),
+      el('td', { cls: 'num', text: fmt(d.r) + ' kg' }),
+      el('td', {}, [el('div', { cls: 'row', style: 'flex-wrap:nowrap;gap:8px' }, [
+        el('div', { style: 'flex:1;height:8px;border-radius:4px;background:#E3EAF3;overflow:hidden', 'aria-hidden': 'true' },
+          [el('div', { style: 'height:100%;width:' + p + '%;background:' + (p >= 100 ? '#2E7D32' : '#0B5CAD') })]),
+        el('span', { cls: 'muted', style: 'min-width:38px;text-align:right', text: p + '%' })])])
+    ]));
+  });
+}
+
+// ---- fleet ----
+function renderFleet() {
+  var box = $('fBody'); box.innerHTML = '';
+  var types = []; DATA.fleet.forEach(function (f) { if (types.indexOf(f.type) < 0) types.push(f.type); });
+  types.forEach(function (t) {
+    var grid = el('div', { cls: 'fleetgrid' });
+    DATA.fleet.filter(function (f) { return f.type === t; }).forEach(function (f) {
+      var planned = !!f.nextMission;
+      grid.appendChild(el('article', { cls: 'card ac' }, [
+        el('div', { cls: 'row', style: 'justify-content:space-between' }, [el('b', { text: f.reg, style: 'color:#0B2545' }),
+          f.status === 'Airborne' ? pill('AIRBORNE') : planned ? pill('PLANNED') : el('span', { cls: 'pill p-ground', text: 'On ground' })]),
+        el('div', {}, [el('span', { cls: 'icao', text: f.parked }), el('span', { cls: 'muted', text: '  parked · home ' + f.home })]),
+        el('div', { cls: 'next' + (planned ? ' on' : '') }, [el('span', { cls: 'label', text: 'Next booking' }),
+          el('span', { text: planned ? f.nextMission + ' · ' + f.nextDate + (f.nextWindow ? ' · ' + f.nextWindow : '') : 'Nothing planned' })])
+      ]));
+    });
+    box.appendChild(el('section', {}, [el('h2', { text: t }), grid]));
+  });
+}
+
+// ---- wiring ----
+document.querySelectorAll('nav button').forEach(function (b) { b.addEventListener('click', function () { if (editRow) resetForm(); show(b.dataset.page); }); });
+document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.go); }); });
+document.querySelectorAll('[data-logf]').forEach(function (b) { b.addEventListener('click', function () { logF = b.dataset.logf; renderLog(); }); });
+$('search').addEventListener('input', renderMissions);
+$('refresh').addEventListener('click', refresh);
+$('bMission').addEventListener('change', function () { $('bQty').value = ''; bookChanged(); });
+$('bQty').addEventListener('input', bookChanged);
+$('bDate').addEventListener('change', bookChanged);
+$('bWin').addEventListener('change', bookChanged);
+$('bStatus').addEventListener('change', bookChanged);
+$('bAll').addEventListener('click', function () { var m = DATA.missions.filter(function (x) { return x.id === $('bMission').value; })[0]; if (m) { $('bQty').value = room(m); bookChanged(); } });
+$('bFerry').addEventListener('change', function () { $('bFerry').value = $('bFerry').value.trim().toUpperCase(); });
+$('bCall').addEventListener('change', function () { $('bCall').value = $('bCall').value.trim().toUpperCase(); });
+$('bCancel').addEventListener('click', function () { var was = editRow; resetForm(); show(was ? 'log' : 'missions'); });
+$('bType').addEventListener('change', function () { bReg = ''; bookChanged(); });
+$('bookForm').addEventListener('submit', saveBooking);
+try { localStorage.removeItem('vswafCall'); localStorage.removeItem('vswafPilot'); } catch (e) {}  // old versions
+$('logoutBtn').addEventListener('click', function () {
+  var t = TOKEN; showLogin('');
+  google.script.run.logout(t);
+});
+// Just came back from Discord?
+(function () {
+  var d = $('loginData'), fresh = d.getAttribute('data-token'), err = d.getAttribute('data-error');
+  if (fresh || err) { try { google.script.history.replace(null, {}); } catch (e) {} }  // remove ?code from the address
+  if (fresh) { TOKEN = fresh; store('vswafToken', fresh); }
+  if (err) showLogin(err);
+  else if (!TOKEN) showLogin('');
+  else refresh();
+})();
+setInterval(function () { if (page !== 'book') refresh(); }, 30000);
+</script>
+</body>
+</html>

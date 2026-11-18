@@ -1,0 +1,49 @@
+# Builds the Windows app on GitHub and puts it on the Releases page.
+# Run it from the Actions tab: "Build Windows app" → Run workflow.
+name: Build Windows app
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Put the web app link into config.json
+        shell: pwsh
+        env:
+          WEB_APP_URL: ${{ secrets.WEB_APP_URL }}
+        run: |
+          if (-not $env:WEB_APP_URL) { throw "Add the WEB_APP_URL secret first (Settings → Secrets and variables → Actions)." }
+          @{ webAppUrl = $env:WEB_APP_URL } | ConvertTo-Json | Set-Content -Encoding utf8NoBOM config.json
+
+      - name: Read the version from package.json
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          "v=$v" >> $env:GITHUB_OUTPUT
+
+      - run: npm install
+
+      - run: npx electron-builder --win --publish never
+
+      - name: Publish on the Releases page
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: vSWAF Mission Board ${{ steps.ver.outputs.v }}
+          body: |
+            **Download:** `vSWAF-Mission-Board-Portable.exe` (no install) or the `Setup` file (installs with a desktop shortcut).
+            If Windows says "Windows protected your PC", click More info → Run anyway.
+          files: |
+            dist/*.exe
