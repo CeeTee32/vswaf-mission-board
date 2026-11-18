@@ -43,7 +43,9 @@ jobs:
           tag_name: v${{ steps.ver.outputs.v }}
           name: vSWAF Mission Board ${{ steps.ver.outputs.v }}
           body: |
-            **Download:** `vSWAF-Mission-Board-Portable.exe` (no install) or the `Setup` file (installs with a desktop shortcut).
+            **Download:** the `Setup` file (installs with a desktop shortcut and updates itself), or `vSWAF-Mission-Board-Portable.exe` (no install, no auto-update).
             If Windows says "Windows protected your PC", click More info → Run anyway.
           files: |
             dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
