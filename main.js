@@ -48,7 +48,29 @@ function loadBoard() {
   win.loadURL(config.webAppUrl).catch(() => showOffline('net'));
 }
 
+// The page finds out it runs in the desktop app (and the update setting) from this tag.
+let baseUA = '';
+function tagUserAgent() {
+  const portable = process.env.PORTABLE_EXECUTABLE_DIR ? '; portable' : '';
+  win.webContents.setUserAgent(baseUA + ' vSWAF-Desktop/' + app.getVersion() + ' (auto-' + (settings.autoUpdate ? 'on' : 'off') + portable + ')');
+}
+
+// The Settings page sends its commands as links to this address; we catch them here.
+const CMD = 'https://script.google.com/vswaf-desktop/';
+function handleCommand(url) {
+  const cmd = url.slice(CMD.length).split(/[?#]/)[0];
+  if (cmd === 'auto-on' || cmd === 'auto-off') {
+    settings.autoUpdate = cmd === 'auto-on'; saveSettings(settings);
+    autoUpdater.autoDownload = settings.autoUpdate && !process.env.PORTABLE_EXECUTABLE_DIR;
+    autoUpdater.autoInstallOnAppQuit = settings.autoUpdate;
+    tagUserAgent();
+  } else if (cmd === 'check') {
+    if (app.isPackaged) checkNow(true);
+  }
+}
+
 function createWindow() {
+  settings = loadSettings();
   win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -65,6 +87,9 @@ function createWindow() {
     }
   });
 
+  baseUA = win.webContents.getUserAgent();
+  tagUserAgent();
+
   // Keep the window title fixed.
   win.on('page-title-updated', (e) => e.preventDefault());
 
@@ -75,6 +100,7 @@ function createWindow() {
   });
   // The offline page's Try again button goes to app://retry/.
   win.webContents.on('will-navigate', (e, url) => {
+    if (url.startsWith(CMD)) { e.preventDefault(); handleCommand(url); return; }
     if (url === 'app://retry/') { e.preventDefault(); loadBoard(); return; }
     if (url.startsWith('file:')) return;
     if (!allowedInApp(url)) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); }
@@ -82,37 +108,43 @@ function createWindow() {
 
   // Discord's login sends the window back to the web app with a redirect; only allow known sites.
   win.webContents.on('will-redirect', (e, url) => {
+    if (url.startsWith(CMD)) { e.preventDefault(); return; }
     if (!allowedInApp(url)) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); }
   });
 
   // Hide Google's "This app was created by a Google Apps Script user" bar on our own web app page.
   // (The same as pressing its X; it only runs on script.google.com inside this app.)
-  win.webContents.on('did-finish-load', () => {
+  // It can be in the top page or in one of Google's frames, so we check every frame.
+  const HIDE_BAR = `(() => {
+    if (window.__vswafBar) return; window.__vswafBar = true;
+    const hide = () => {
+      if (!document.body || document.getElementById('appRoot')) return;   // never touch the Mission Board itself
+      document.querySelectorAll('body *').forEach((el) => {
+        if (el.tagName === 'IFRAME' || el.querySelector('iframe')) return;
+        const t = el.textContent || '';
+        if (t.indexOf('Google Apps Script') < 0 || t.length > 400) return;
+        let top = el;
+        while (top.parentElement && top.parentElement !== document.body && !top.parentElement.querySelector('iframe')) top = top.parentElement;
+        if (top.style.display !== 'none') top.style.display = 'none';
+      });
+    };
+    hide();
+    new MutationObserver(hide).observe(document.documentElement, { childList: true, subtree: true });
+  })();`;
+  const hideBarEverywhere = () => {
     let host = '';
     try { host = new URL(win.webContents.getURL()).hostname; } catch (e) {}
     if (host !== 'script.google.com') return;
-    win.webContents.executeJavaScript(`(() => {
-      const hide = () => {
-        document.querySelectorAll('body *').forEach((el) => {
-          if (el.tagName === 'IFRAME' || el.querySelector('iframe')) return;
-          const t = el.textContent || '';
-          if (t.indexOf('Google Apps Script') < 0 || t.length > 400) return;
-          let top = el;
-          while (top.parentElement && top.parentElement !== document.body && !top.parentElement.querySelector('iframe')) top = top.parentElement;
-          top.style.display = 'none';
-        });
-      };
-      hide();
-      new MutationObserver(hide).observe(document.body, { childList: true, subtree: true });
-    })();`).catch(() => {});
-  });
+    win.webContents.mainFrame.framesInSubtree.forEach((f) => { f.executeJavaScript(HIDE_BAR).catch(() => {}); });
+  };
+  win.webContents.on('did-finish-load', hideBarEverywhere);
+  win.webContents.on('did-frame-finish-load', hideBarEverywhere);
 
   // No internet: show the offline page with a Retry button.
   win.webContents.on('did-fail-load', (e, code, desc, url, isMainFrame) => {
     if (isMainFrame && code !== -3) showOffline('net');
   });
 
-  settings = loadSettings();
   setupSettingsBridge();
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     {
