@@ -39,7 +39,44 @@ function allowedInApp(url) { return isGoogle(url) || isDiscord(url); }
 
 let win;
 
+// ---- Start screen: big logo while the board loads ----
+let splash = null, revealed = false;
+function createSplash() {
+  splash = new BrowserWindow({
+    width: 460, height: 360, frame: false, resizable: false, center: true, show: true,
+    backgroundColor: '#0B2545', title: 'vSWAF Mission Board',
+    icon: path.join(__dirname, 'build', 'icon.png'),
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  splash.loadFile(path.join(__dirname, 'splash.html'));
+  splashStart = Date.now();
+  splash.on('closed', () => { splash = null; });
+}
+function parentWin() { return win && !win.isDestroyed() && win.isVisible() ? win : undefined; }
+const SPLASH_MIN_MS = 2200;      // let the intro animation finish
+let splashStart = 0;
+function revealMain() {
+  if (revealed) return;
+  const wait = SPLASH_MIN_MS - (Date.now() - splashStart);
+  if (splashStart && wait > 0) { setTimeout(revealMain, wait); return; }
+  revealed = true;
+  if (win && !win.isDestroyed()) { win.show(); win.focus(); }
+  if (splash && !splash.isDestroyed()) splash.close();
+}
+// The board is ready when the login screen or the app itself is showing.
+const READY_JS = `(() => { const a = document.getElementById('appRoot'), l = document.getElementById('loginScreen');
+  return !!(a && l) && (!a.classList.contains('hidden') || !l.classList.contains('hidden')); })()`;
+function watchUntilReady() {
+  const timer = setInterval(() => {
+    if (revealed || !win || win.isDestroyed()) return clearInterval(timer);
+    Promise.all(win.webContents.mainFrame.framesInSubtree.map((f) => f.executeJavaScript(READY_JS).catch(() => false)))
+      .then((r) => { if (r.some(Boolean)) { clearInterval(timer); revealMain(); } });
+  }, 300);
+  setTimeout(revealMain, 20000);   // never wait longer than 20 s
+}
+
 function showOffline(reason) {
+  splashStart = 0; revealMain();
   win.loadFile(path.join(__dirname, 'offline.html'), { query: { reason: reason || '' } });
 }
 
@@ -75,7 +112,9 @@ function createWindow() {
   settings = loadSettings();
   if (!baseUA) baseUA = app.userAgentFallback;
   tagUserAgent();
+  createSplash();
   win = new BrowserWindow({
+    show: false,                               // shown when the board is ready
     width: 1440,
     height: 900,
     minWidth: 900,
@@ -165,6 +204,7 @@ function createWindow() {
   ]));
 
   loadBoard();
+  watchUntilReady();
   checkForUpdates();
 }
 
@@ -215,18 +255,18 @@ function checkForUpdates() {
   autoUpdater.autoInstallOnAppQuit = settings.autoUpdate;
 
   autoUpdater.on('error', () => {
-    if (manualCheck) dialog.showMessageBox(win, { type: 'warning', message: 'Could not check for updates.', detail: 'Check your internet connection and try again.' });
+    if (manualCheck) dialog.showMessageBox(parentWin(), { type: 'warning', message: 'Could not check for updates.', detail: 'Check your internet connection and try again.' });
     manualCheck = false;
   });
   autoUpdater.on('update-not-available', () => {
-    if (manualCheck) dialog.showMessageBox(win, { type: 'info', message: 'You have the latest version (' + app.getVersion() + ').' });
+    if (manualCheck) dialog.showMessageBox(parentWin(), { type: 'info', message: 'You have the latest version (' + app.getVersion() + ').' });
     manualCheck = false;
   });
   autoUpdater.on('update-available', (info) => {
     const wasManual = manualCheck; manualCheck = false;
     if (autoUpdater.autoDownload) return;                     // downloading by itself; asks when ready
     if (portable) {
-      dialog.showMessageBox(win, {
+      dialog.showMessageBox(parentWin(), {
         type: 'info', buttons: ['Download', 'Later'], defaultId: 0, cancelId: 1,
         title: 'New version', message: 'vSWAF Mission Board ' + info.version + ' is available.',
         detail: 'Download the new version from the Releases page.'
@@ -234,7 +274,7 @@ function checkForUpdates() {
       return;
     }
     if (!settings.autoUpdate && !wasManual && settings.skipped === info.version) return;
-    dialog.showMessageBox(win, {
+    dialog.showMessageBox(parentWin(), {
       type: 'info', buttons: ['Update now', 'Not now', 'Skip this version'], defaultId: 0, cancelId: 1,
       title: 'New version', message: 'vSWAF Mission Board ' + info.version + ' is available.',
       detail: 'Automatic updates are off. Do you want to update?'
@@ -244,7 +284,7 @@ function checkForUpdates() {
     });
   });
   autoUpdater.on('update-downloaded', (info) => {
-    dialog.showMessageBox(win, {
+    dialog.showMessageBox(parentWin(), {
       type: 'info', buttons: ['Restart now', 'Later'], defaultId: 0, cancelId: 1,
       title: 'Update ready', message: 'vSWAF Mission Board ' + info.version + ' is ready.',
       detail: 'Restart now to update, or it updates the next time you close the app.'
@@ -259,7 +299,7 @@ function checkForUpdates() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  app.on('second-instance', () => { if (win) { revealMain(); if (win.isMinimized()) win.restore(); win.focus(); } });
   app.whenReady().then(createWindow);
   app.on('window-all-closed', () => app.quit());
 }
