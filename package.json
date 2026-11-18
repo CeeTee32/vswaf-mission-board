@@ -1,7 +1,7 @@
 {
   "name": "vswaf-mission-board",
   "productName": "vSWAF Mission Board",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "vSWAF Mission Board desktop app",
   "main": "main.js",
   "author": "vSWAF",
