@@ -70,6 +70,28 @@ function createWindow() {
     if (!allowedInApp(url)) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); }
   });
 
+  // Hide Google's "This app was created by a Google Apps Script user" bar on our own web app page.
+  // (The same as pressing its X; it only runs on script.google.com inside this app.)
+  win.webContents.on('did-finish-load', () => {
+    let host = '';
+    try { host = new URL(win.webContents.getURL()).hostname; } catch (e) {}
+    if (host !== 'script.google.com') return;
+    win.webContents.executeJavaScript(`(() => {
+      const hide = () => {
+        document.querySelectorAll('body *').forEach((el) => {
+          if (el.tagName === 'IFRAME' || el.querySelector('iframe')) return;
+          const t = el.textContent || '';
+          if (t.indexOf('Google Apps Script') < 0 || t.length > 400) return;
+          let top = el;
+          while (top.parentElement && top.parentElement !== document.body && !top.parentElement.querySelector('iframe')) top = top.parentElement;
+          top.style.display = 'none';
+        });
+      };
+      hide();
+      new MutationObserver(hide).observe(document.body, { childList: true, subtree: true });
+    })();`).catch(() => {});
+  });
+
   // No internet: show the offline page with a Retry button.
   win.webContents.on('did-fail-load', (e, code, desc, url, isMainFrame) => {
     if (isMainFrame && code !== -3) showOffline('net');
