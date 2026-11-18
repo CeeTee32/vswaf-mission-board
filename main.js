@@ -52,7 +52,9 @@ function loadBoard() {
 let baseUA = '';
 function tagUserAgent() {
   const portable = process.env.PORTABLE_EXECUTABLE_DIR ? '; portable' : '';
-  win.webContents.setUserAgent(baseUA + ' vSWAF-Desktop/' + app.getVersion() + ' (auto-' + (settings.autoUpdate ? 'on' : 'off') + portable + ')');
+  const ua = baseUA + ' vSWAF-Desktop/' + app.getVersion() + ' (auto-' + (settings.autoUpdate ? 'on' : 'off') + portable + ')';
+  app.userAgentFallback = ua;                 // used by every frame, also Google's inner frames
+  if (win) win.webContents.setUserAgent(ua);
 }
 
 // The Settings page sends its commands as links to this address; we catch them here.
@@ -71,6 +73,8 @@ function handleCommand(url) {
 
 function createWindow() {
   settings = loadSettings();
+  if (!baseUA) baseUA = app.userAgentFallback;
+  tagUserAgent();
   win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -87,7 +91,6 @@ function createWindow() {
     }
   });
 
-  baseUA = win.webContents.getUserAgent();
   tagUserAgent();
 
   // Keep the window title fixed.
